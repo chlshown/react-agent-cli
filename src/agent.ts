@@ -50,11 +50,14 @@ export async function runAgent(messages: ModelMessage[], userInput: string): Pro
         case 'tool-call':
           log.toolCall(part.toolName, part.input);
           break;
-        case 'tool-result':
-          log.toolResult(part.toolName, true, JSON.stringify('result' in part ? part.result : undefined));
+        case 'tool-result': {
+          // 不同 SDK 版本结果字段名不同（result / output），做兼容
+          const p = part as { result?: unknown; output?: unknown };
+          log.toolResult(part.toolName, true, p.result ?? p.output);
           break;
+        }
         case 'tool-error':
-          log.toolResult(part.toolName, false, String(part.error));
+          log.toolResult(part.toolName, false, part.error);
           break;
         case 'error':
           log.error(`stream error: ${JSON.stringify(part.error)}`);

@@ -14,9 +14,11 @@ async function main() {
   console.log(BANNER);
   const rl = readline.createInterface({ input: stdin, output: stdout });
   const messages: ModelMessage[] = [];
+  process.stdout.write('\n\x1b[1m你 ›\x1b[0m ');
 
-  while (true) {
-    const input = (await rl.question('\n\x1b[1m你 ›\x1b[0m ')).trim();
+  // for-await 迭代 readline：stdin 关闭（EOF/管道输入结束）时自然退出，不会崩
+  for await (const raw of rl) {
+    const input = raw.trim();
     if (!input) continue;
     if (input === '/exit' || input === '/quit') break;
     if (input === '/reset') {
@@ -26,6 +28,7 @@ async function main() {
     }
     log.info('Agent ›');
     await runAgent(messages, input);
+    process.stdout.write('\n\x1b[1m你 ›\x1b[0m ');
   }
 
   rl.close();
