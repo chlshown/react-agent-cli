@@ -8,9 +8,9 @@
 ## 快速开始
 
 ```bash
-npm install
+yarn
 cp .env.example .env   # 填 LLM API key（推荐 DeepSeek）和 Tavily key（免费 1000 次/月）
-npm run dev
+yarn dev
 ```
 
 试试：
