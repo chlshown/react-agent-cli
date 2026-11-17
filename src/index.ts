@@ -2,6 +2,8 @@ import * as readline from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import type { ModelMessage } from 'ai';
 import { runAgent } from './agent.js';
+import { buildTools } from './tools/index.js';
+import { closeMcp } from './mcp.js';
 import { log } from './logger.js';
 
 const BANNER = `
@@ -12,6 +14,11 @@ const BANNER = `
 
 async function main() {
   console.log(BANNER);
+
+  // 启动时构建工具集（异步：会尝试连接 Tavily MCP，失败则回退 REST）
+  const tools = await buildTools();
+  log.info(`工具就绪：${Object.keys(tools).join(', ')}`);
+
   const rl = readline.createInterface({ input: stdin, output: stdout });
   const messages: ModelMessage[] = [];
   process.stdout.write('\n\x1b[1m你 ›\x1b[0m ');
@@ -27,11 +34,12 @@ async function main() {
       continue;
     }
     log.info('Agent ›');
-    await runAgent(messages, input);
+    await runAgent(messages, input, tools);
     process.stdout.write('\n\x1b[1m你 ›\x1b[0m ');
   }
 
   rl.close();
+  await closeMcp(); // 关闭 MCP 连接，避免进程挂起
   log.info('再见 👋');
 }
 

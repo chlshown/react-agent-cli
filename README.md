@@ -37,17 +37,21 @@ Vercel AI SDK 用 `stopWhen: stepCountIs(n)` 自动执行这个循环；本项�
 
 ```
 src/
-├── index.ts        # CLI REPL（多轮历史、/exit、/reset）
+├── index.ts        # CLI REPL（启动时构建工具、多轮历史、退出关 MCP）
 ├── agent.ts        # ★ Agent Loop：streamText + tools + stopWhen + onStepFinish
 ├── config.ts       # OpenAI 兼容 provider 配置（env 驱动，可换任意模型）
+├── mcp.ts          # ★ Tavily 官方远程 MCP 接入（Streamable HTTP），失败自动回退 REST
 ├── logger.ts       # 工具调用链路日志（可观测性）
 ├── retry.ts        # 指数退避重试（失败重试）
 └── tools/
-    ├── search.ts     # Tavily 网页搜索
+    ├── index.ts      # buildTools()：MCP 工具 + 本地工具合并成 ToolSet
+    ├── search.ts     # Tavily 搜索 REST 版（MCP 不可用时的 fallback）
     ├── fetch.ts      # 网页抓取 → Turndown 转 Markdown（截断防上下文爆炸）
     ├── calculator.ts # mathjs 安全求值（不用 eval，防任意代码执行）
     └── files.ts      # 本地读写，路径强制沙箱在 workspace/（防目录穿越）
 ```
+
+> **搜索能力双模式**：配了 `TAVILY_MCP_URL` 就走官方 MCP，自动注入 `tavily_search/extract/crawl/map/research` 5 个工具；没配或连不上就回退到自研 REST 版 `webSearch`。工具层可插拔，这本身是 MCP 集成的实战样例。
 
 ## 刻意覆盖的面试考点
 
@@ -60,6 +64,7 @@ src/
 | 失败重试 | `retry.ts` 指数退避；agent 层失败时回滚半截历史 |
 | 工具安全 | calculator 不用 eval；files 沙箱防目录穿越 |
 | 上下文工程 | fetchPage 截断 8000 字符，防撑爆上下文 |
+| **MCP 集成** | 接 Tavily 官方远程 MCP（Streamable HTTP），`client.tools()` 动态注入工具集，失败自动回退 REST（`src/mcp.ts`） |
 
 ## Roadmap
 

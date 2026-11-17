@@ -1,6 +1,5 @@
-import { streamText, stepCountIs, type ModelMessage } from 'ai';
+import { streamText, stepCountIs, type ModelMessage, type ToolSet } from 'ai';
 import { model, maxSteps } from './config.js';
-import { tools } from './tools/index.js';
 import { log } from './logger.js';
 
 /**
@@ -20,12 +19,12 @@ import { log } from './logger.js';
 const SYSTEM_PROMPT = `你是一个研究型助手（ReAct 模式），运行在 CLI 中。
 工作方式：
 1. 先思考需要什么信息，再调用工具（Reason → Act → Observe 循环）；
-2. 搜索到链接后，用 fetchPage 读全文，不要只看摘要就下结论；
+2. 需要联网信息时优先用搜索类工具（如 tavily-search / webSearch）；搜到链接后用抓取/提取类工具（fetchPage 或 tavily-extract）读全文，不要只看摘要就下结论；
 3. 复杂任务先把研究笔记用 writeFile 存到 workspace/，最后汇总；
 4. 工具失败时分析原因，换关键词或换工具重试，不要重复同一调用超过 2 次；
 5. 最终回答用中文，给出来源链接；不确定就明说，不要编造。`;
 
-export async function runAgent(messages: ModelMessage[], userInput: string): Promise<void> {
+export async function runAgent(messages: ModelMessage[], userInput: string, tools: ToolSet): Promise<void> {
   messages.push({ role: 'user', content: userInput });
 
   let stepCount = 0;
